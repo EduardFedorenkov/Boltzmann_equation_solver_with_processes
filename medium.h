@@ -22,6 +22,8 @@ public:
 
 	double GetDensity(const size_t idx) const;
 
+	double GetTermalVel(const size_t idx) const;
+
 	double GetIonMass() const;
 
 private:
@@ -29,4 +31,3 @@ private:
 	vector<double> np;
 	double ion_mass;
 };
-
