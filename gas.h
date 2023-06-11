@@ -20,6 +20,10 @@ public:
 
 	void SaveDistr(const size_t space_idx, const size_t time_idx);
 
+	vector<vec3> SpitzerTestForce(const Plasma& p) const;
+
+	vector<double> GetDensity() const;
+
 private:
 	DistributionFunction df;
 	vector<shared_ptr<PlasmaGasProcess>> pg_processes;

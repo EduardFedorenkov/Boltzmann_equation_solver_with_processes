@@ -65,6 +65,8 @@ public:
 
 	void ChangeDFbyProcess(const vector<cube>& rhs, const double time_step);
 
+	vector<vec3> ComputeForceForSpitzerTest(const vector<cube>& rhs) const;
+
 	// ----Can be in private section----
 
 	cube Maxwell(double density, double temperature) const;

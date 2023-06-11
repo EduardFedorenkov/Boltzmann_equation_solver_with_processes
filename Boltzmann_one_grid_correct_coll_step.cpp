@@ -15,6 +15,7 @@
 #include "processes.h"
 #include "medium.h"
 #include "gas.h"
+#include <cmath>
 
 void TestVelocityGrid(){
 	VelocityGrid v(11,5);
@@ -67,7 +68,7 @@ void CXCheck(const Plasma& p, const DistributionFunction& df){
 	auto rhs = cx.ComputePGRightHandSide(p, df);
 	//size_t mid_point = (df.GetVelGrid().GetSize() - 1) / 2;
 	cout << rhs[0] << endl;
-	cout << p.ComputeDencity(0, vec(df.GetVelGrid().Get1DGrid())) << endl;
+	cout << p.GetDensity(0) << endl;
 	cout << p.GetDensity(0);
 	//auto plasma_distr = p.MakeMaxwellDistr(0, df.GetVelGrid().Get1DGrid());
 	//cout << plasma_distr.slice(mid_point) << endl;
@@ -76,6 +77,20 @@ void CXCheck(const Plasma& p, const DistributionFunction& df){
 void HeElasticCheck(const Plasma& p){
 	He_elastic Hee("HeElastic.txt", p.GetIonMass(), p);
 	cout << datum::m_p * datum::c_0 * datum::c_0 / datum::eV / Hee.GetDiffusCoeff(0);
+}
+
+double TheoreticalSpitzerTestForce(const double n, const double T, const vec3& Ve, const bool IsVe){
+	const double el_ch = datum::ec * 10 * datum::c_0;
+	const double vel_sqr_for_lambda = IsVe ? norm(Ve) * norm(Ve) : 2 * T * 1.6e-12 / (datum::m_e * 1e3);
+	const double Lambda_ee = std::log(0.5 * datum::m_e * 1e3 * vel_sqr_for_lambda *
+			sqrt(T * 1.6e-12 / (8 * datum::pi * n)) / pow(el_ch, 3));
+	const double tau_e = (3 * sqrt(datum::m_e * 1e3 * std::pow(T * 1.6e-12,3) ) ) /
+			(4 * datum::sqrt2pi * n * std::pow(el_ch,4) * Lambda_ee);
+	// Validate crocc section value:
+	cout << "Lambda = " << Lambda_ee << endl;
+	cout << "tau_e = " << tau_e << endl;
+	//
+	return datum::m_e * 1e3 * n * norm(Ve) / tau_e;
 }
 
 int main() {
@@ -87,32 +102,41 @@ int main() {
 	// Gas params
 	double Tg = 1;
 	double ng = 1e14;
-	double mg = datum::m_p * datum::c_0 * datum::c_0 / datum::eV;
+	double mg = datum::m_e * datum::c_0 * datum::c_0 / datum::eV;
 
 	// Plasma params
-	double Tp = 100;
+	double Tp = 1;
 	double np = 1e14;
-	double mi = mg;
-	Plasma p(mi, Tp, np);
+	double mi = datum::m_e * datum::c_0 * datum::c_0 / datum::eV;
+	vec3 Vp{1e6, 0, 0};
+	Plasma p(mi, Tp, np, Vp);
+	cout << "np = " << p.GetDensity(0) << endl;
+	cout << "Vt = " << p.GetTermalVel(0) << endl;
+	cout << "Tp = " << p.GetTemperature(0) << endl;
 
 	// Velocity grid params
 	size_t v_size = 11;
 	VelocityGrid v(v_size, Tg, mg);
 
 	// Time Evolution
-	size_t N_steps = 100;
+	size_t N_steps = 1;
+	cout << "Vp = " << Vp << ' ' <<  "V_grid = "  << *v.Get1DGrid().rbegin() << endl;
+	cout << "vel_grid_step = " << v.GetGridStep() << endl;
+	cout << "Vtp = " << p.GetTermalVel(0) << endl;
+
+	std::cout << "Force_theory = " << TheoreticalSpitzerTestForce(np, Tp, Vp, false) << std::endl;
 
 	DistributionFunction f_H(DistributionType::Maxwell, mg, v, ng, Tg);
-	cout << "Distribution creation ---> Start" << '\n';
-	Gas H(f_H, vector<shared_ptr<PlasmaGasProcess>>({make_shared<HFastIons_elastic>("Hp_Elastic.txt", p, v)}), vector<shared_ptr<GasGasProcess>>{});
-	cout << "OK";
+	Gas H(f_H, vector<shared_ptr<PlasmaGasProcess>>({make_shared<GFastIons_elastic>(200, mg, p, v)}), vector<shared_ptr<GasGasProcess>>{});
+	cout << "OK" << endl;
 	H.SaveDistr(0, 0);
 	for(size_t t = 0; t < N_steps; ++t){
-		H.TimeEvolution_ConstTimeStep(p, 1e-12);
-		if(t%10 == 0 and t != 0)
-			H.SaveDistr(0, t+1);
-		//cout << times.first << ' ' << times.second << '\n';
+		H.TimeEvolution_ConstTimeStep(p, 1e-7);
+		H.SaveDistr(0, t+1);
 	}
+	auto F = H.SpitzerTestForce(p);
+	std::cout << F.at(0) << std::endl;
+
 	//SaveProcessData(p, f_H, 100, 50);
 	//CXCheck(p, f_H);
 	//HeElasticCheck(p);

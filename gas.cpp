@@ -55,6 +55,14 @@ void Gas::TimeEvolution_ConstTimeStep(const Plasma& p, const double time_step){
 	df.ChangeDFbyProcess(ComputeRightHandSides(p), time_step);
 }
 
+vector<vec3> Gas::SpitzerTestForce(const Plasma& p) const{
+	return df.ComputeForceForSpitzerTest(ComputeRightHandSides(p));
+}
+
+vector<double> Gas::GetDensity() const{
+	return df.ComputeDensity();
+}
+
 void Gas::SaveDistr(const size_t space_idx, const size_t time_idx){
 	df.Save(space_idx, "DF_z_" + to_string(space_idx) + "_t_" + to_string(time_idx));
 }

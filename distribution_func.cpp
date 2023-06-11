@@ -134,7 +134,7 @@ vector<double> DistributionFunction::ComputeTemperature(const vector<vec3>& mean
 	double phase_volume = pow(velocity_grid.GetGridStep(),3);
 	for(size_t i = 0; i < x_size; ++i){
 		if(density[i] > datum::eps){
-			double factor = mass * phase_volume / (3 * density[i] * Sqr(datum::c_0) * 1e4);
+			double factor = mass * datum::eV * phase_volume / (3 * density[i] * Sqr(datum::c_0) );
 			for(size_t k = 0; k < v_size; ++k){
 				for(size_t l = 0; l < v_size; ++l){
 					for(size_t m = 0; m < v_size; ++m){
@@ -212,6 +212,27 @@ void DistributionFunction::ChangeDFbyProcess(const vector<cube>& rhs, const doub
 	}
 }
 
+vector<vec3> DistributionFunction::ComputeForceForSpitzerTest(const vector<cube>& rhs) const{
+	size_t x_size = space_grid.GetSize();
+	size_t v_size = velocity_grid.GetSize();
+	vec vel_1D(velocity_grid.Get1DGrid());
+	double phase_volume = pow(velocity_grid.GetGridStep(),3);
+	vector<vec3> Force(x_size, vec({0,0,0}));
+	for(size_t i = 0; i < space_grid.GetSize(); i++){
+		for(size_t k = 0; k < v_size; ++k){
+			for(size_t l = 0; l < v_size; ++l){
+				for(size_t m = 0; m < v_size; ++m){
+					Force[i](0) += rhs[i](m,l,k) * vel_1D(m);
+					Force[i](1) += rhs[i](m,l,k) * vel_1D(l);
+					Force[i](2) += rhs[i](m,l,k) * vel_1D(k);
+				}
+			}
+		}
+		Force[i] *= phase_volume * mass * datum::eV / (datum::c_0 * datum::c_0) * 1e3;
+	}
+	return Force;
+}
+
 cube DistributionFunction::Maxwell(double density, double temperature) const{
 	size_t v_size = velocity_grid.GetSize();
 	vector<double> vel_1D = velocity_grid.Get1DGrid();
@@ -221,11 +242,11 @@ cube DistributionFunction::Maxwell(double density, double temperature) const{
 	for(size_t k = 0; k < v_size; ++k){
 		for(size_t l = 0; l < v_size; ++l){
 			for(size_t m = 0; m < v_size; ++m){
-				maxwell(m,l,k) = factor * exp(- ( Sqr(vel_1D[k]) + Sqr(vel_1D[l]) + Sqr(vel_1D[m]) ) / sqr_termal_vel);
+				maxwell(m,l,k) = exp(- ( Sqr(vel_1D[k]) + Sqr(vel_1D[l]) + Sqr(vel_1D[m]) ) / sqr_termal_vel);
 			}
 		}
 	}
-	return maxwell;
+	return maxwell * factor;
 }
 
 cube DistributionFunction::TestDistribution_1(double density, double temperature) const{
