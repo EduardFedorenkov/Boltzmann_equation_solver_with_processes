@@ -108,7 +108,7 @@ int main() {
 	double Tp = 1;
 	double np = 1e14;
 	double mi = datum::m_e * datum::c_0 * datum::c_0 / datum::eV;
-	vec3 Vp{1e6, 0, 0};
+	vec3 Vp{1e3, 0, 0};
 	Plasma p(mi, Tp, np, Vp);
 	cout << "np = " << p.GetDensity(0) << endl;
 	cout << "Vt = " << p.GetTermalVel(0) << endl;
@@ -120,26 +120,34 @@ int main() {
 
 	// Time Evolution
 	size_t N_steps = 1;
-	cout << "Vp = " << Vp << ' ' <<  "V_grid = "  << *v.Get1DGrid().rbegin() << endl;
+	cout << "Vp = " << p.GetVel(0) << ' ' <<  "V_grid = "  << *v.Get1DGrid().rbegin() << endl;
 	cout << "vel_grid_step = " << v.GetGridStep() << endl;
 	cout << "Vtp = " << p.GetTermalVel(0) << endl;
 
 	std::cout << "Force_theory = " << TheoreticalSpitzerTestForce(np, Tp, Vp, false) << std::endl;
 
-	DistributionFunction f_H(DistributionType::Maxwell, mg, v, ng, Tg);
-	Gas H(f_H, vector<shared_ptr<PlasmaGasProcess>>({make_shared<GFastIons_elastic>(200, mg, p, v)}), vector<shared_ptr<GasGasProcess>>{});
-	cout << "OK" << endl;
-	H.SaveDistr(0, 0);
-	for(size_t t = 0; t < N_steps; ++t){
-		H.TimeEvolution_ConstTimeStep(p, 1e-7);
-		H.SaveDistr(0, t+1);
-	}
-	auto F = H.SpitzerTestForce(p);
-	std::cout << F.at(0) << std::endl;
+	//DistributionFunction f_H(DistributionType::Maxwell, mg, v, ng, Tg);
+	//Gas H(f_H, vector<shared_ptr<PlasmaGasProcess>>({make_shared<GFastIons_elastic>(200, mg, p, v)}), vector<shared_ptr<GasGasProcess>>{});
+	//cout << "OK" << endl;
+	//auto F = H.SpitzerTestForce(p);
+	//std::cout << F.at(0) << std::endl;
 
-	//SaveProcessData(p, f_H, 100, 50);
-	//CXCheck(p, f_H);
-	//HeElasticCheck(p);
+	//H.SaveDistr(0, 0);
+	//for(size_t t = 0; t < N_steps; ++t){
+	//	H.TimeEvolution_ConstTimeStep(p, 1e-8);
+	//	H.SaveDistr(0, t+1);
+	//}
+
+	const size_t N_angle = 10;
+	vec3 x{1,1,0};
+	x = normalise(x);
+	cout << "x = " << x << endl;
+
+	const auto points = ScatteringSphere(N_angle, x, {0,0,0});
+	for(const auto& point : points) {
+		cout << dot(point, x) << endl;
+	}
+
 
 	return 0;
 }

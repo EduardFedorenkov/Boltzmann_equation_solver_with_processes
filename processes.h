@@ -409,7 +409,7 @@ public:
 		size_t v_size = df.GetVelGrid().GetSize();
 		vector<cube> rhs(p.GetSpaceSize(), cube(v_size,v_size,v_size, fill::zeros ));
 		for(size_t i = 0; i < p.GetSpaceSize(); ++i){
-			vec tmp_rhs = frequancy_factor[i].t() * vectorise(df.GetDistrSlice(i))
+			vec tmp_rhs =  frequancy_factor[i].t() * vectorise(df.GetDistrSlice(i))
 					- sum(frequancy_factor[i], 1) % vectorise(df.GetDistrSlice(i));
 			for(size_t k = 0; k < v_size; ++k){
 				for(size_t l = 0; l < v_size; ++l){
@@ -426,7 +426,7 @@ public:
 				const Plasma& pl, const size_t space_idx){
 			vec3 u_ji_vec = v_j - v_i;
 			vec3 u_ji_vec_normalise = normalise(u_ji_vec);
-			vector<vec3> sphere_points = ScatteringSphere(N_angles, u_ji_vec_normalise, {0,0,0});
+			vector<vec3> sphere_points = ScatteringSphere(N_angles, u_ji_vec, {0,0,0});
 			double mass_factor = (gas_mass + pl.GetIonMass()) / (pl.GetIonMass());
 			//cout << "exp_order = " << expl( - mass_factor ) << endl;
 			double u_ji = norm(u_ji_vec);
